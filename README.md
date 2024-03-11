@@ -18,12 +18,11 @@
 
 3. 模型位置：
 
-   *model*
-   |--*mask2former*
-   |  |--**config.json**
-   |  |--**model.safetensors**
-   |
-   |--**big-lama.pt**
+   *model*<br>
+   &emsp;|--*mask2former*<br>
+   &emsp;|&emsp;|--**config.json**<br>
+   &emsp;|&emsp;|--**model.safetensors**<br>
+   &emsp;|--**big-lama.pt**
 
 ## 运行
 
