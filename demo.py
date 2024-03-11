@@ -17,7 +17,6 @@ from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QPushButton, QSplitter,\
 from simple_lama import SimpleLamaTest
 
 from PIL import Image
-from torchvision import transforms
 
 from transformers import Mask2FormerForUniversalSegmentation
 from transformers import Mask2FormerImageProcessor
@@ -124,7 +123,7 @@ class PaintBoard(QWidget):
         
 
         self.__thickness = 10  # 默认画笔粗细为10px
-        self.__penColor = QColor('red')  # 设置默认画笔颜色为红色
+        self.__penColor = QColor(255,0,0,128)  # 设置默认画笔颜色为红色
         self.__colorList = QColor.colorNames()  # 获取颜色列表
         
 
@@ -170,7 +169,7 @@ class PaintBoard(QWidget):
         if self.EraserMode == False:
             # 非橡皮擦模式
             self.__painter.setCompositionMode(QPainter.CompositionMode_Source)
-            self.__painter.setOpacity(0.5)
+            #self.__painter.setOpacity(0.5)
             self.__painter.setPen(QPen(self.__penColor, self.__thickness, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))  # 设置画笔颜色，粗细
         else:
             # 橡皮擦模式下画笔为透明色
@@ -281,15 +280,15 @@ class MainWidget(QWidget):
         self.main_layout.addLayout(self.left_layout)
         
         # 输出图像
-        mid_layout = QVBoxLayout()
-        mid_layout.setContentsMargins(10, 10, 10, 10)
+        self.mid_layout = QVBoxLayout()
+        self.mid_layout.setContentsMargins(10, 10, 10, 10)
         splitter = QSplitter(self)  # 占位符
-        mid_layout.addWidget(splitter)
+        self.mid_layout.addWidget(splitter)
         self.__paintBoard_name = QLabel(self)
         self.__paintBoard_name.setText("输出图像")
-        mid_layout.addWidget(self.__paintBoard_name)
-        mid_layout.addWidget(self.__outputBoard)
-        self.main_layout.addLayout(mid_layout)
+        self.mid_layout.addWidget(self.__paintBoard_name)
+        self.mid_layout.addWidget(self.__outputBoard)
+        self.main_layout.addLayout(self.mid_layout)
 
         # 新建垂直子布局用于放置按键
         self.sub_layout = QVBoxLayout()
@@ -379,6 +378,10 @@ class MainWidget(QWidget):
         self.__paintBoard.ChangePenThickness(penThickness)
 
     def on_btn_Save_Clicked(self):
+        if self.input_image == None:
+            warning = QMessageBox.warning(self, "Warning", "Please import image first", QMessageBox.Yes)
+            print(warning)
+            return
         savePath = QFileDialog.getSaveFileName(self, 'Save Your Paint', '.\\', '*.png')
         print(savePath)
         if savePath[0] == "":
@@ -434,12 +437,35 @@ class MainWidget(QWidget):
             warning = QMessageBox.warning(self, "Warning", "Please import image first", QMessageBox.Yes)
             print(warning)
         else:
-            pass
-            # TODO
+            mask_rgba = self.__paintBoard.board.toImage()
+            pil_mask_rgba = Image.fromqpixmap(mask_rgba)
+            mask_rgba_array = np.array(pil_mask_rgba)
+            mask_array = mask_rgba_array[:,:,0].reshape(mask_rgba_array.shape[0], mask_rgba_array.shape[1])
+            mask = Image.fromarray(mask_array.astype('uint8'))
+            self.output_image = self.inpainter(self.input_image, mask)
+            index = self.mid_layout.count()
+            self.mid_layout.itemAt(index-1).widget().deleteLater() # 删除之前的画板
+            self.__outputBoard  = QLabel(self)
+            self.__outputBoard.setPixmap(QPixmap.fromImage(convert_pil_to_qimage(self.output_image)))
+            scroll_area = QScrollArea() # 新建一个滚动区域包住画板
+            scroll_area.setWidgetResizable(True)
+            scroll_area.setMinimumSize(QSize(800,800))
+            scroll_area.setWidget(self.__outputBoard)
+            self.mid_layout.addWidget(scroll_area)
+            
+            
             
     def save_inpainting_image(self):
-        # TODO
-        pass
+        if self.output_image == None:
+            warning = QMessageBox.warning(self, "Warning", "Please call lama first", QMessageBox.Yes)
+            print(warning)
+        else:
+            savePath = QFileDialog.getSaveFileName(self, 'Save Your Paint', '.\\', '*.jpg')
+            print(savePath)
+            if savePath[0] == "":
+                print("Save cancel")
+                return
+            self.output_image.save(savePath[0])
 
 
 if __name__ == '__main__':
