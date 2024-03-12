@@ -444,17 +444,17 @@ class MainWidget(QWidget):
             print(warning)
         else:
             index = self.mid_layout.count()
-            self.mid_layout.itemAt(index-1).widget().deleteLater() # 删除之前的画板
+            self.mid_layout.itemAt(index-1).widget().deleteLater() # 删除之前的修复图像
             mask_rgba = self.__paintBoard.board.toImage()
             pil_mask_rgba = Image.fromqpixmap(mask_rgba)
             mask_rgba_array = np.array(pil_mask_rgba)
             mask_array = mask_rgba_array[:,:,0].reshape(mask_rgba_array.shape[0], mask_rgba_array.shape[1])
             mask = Image.fromarray(mask_array.astype('uint8'))
             self.output_image = self.inpainter(self.input_image, mask)
-            
+            self.output_image = self.output_image.crop((0, 0, mask.size[0], mask.size[1]))
             self.__outputBoard  = QLabel(self)
             self.__outputBoard.setPixmap(QPixmap.fromImage(convert_pil_to_qimage(self.output_image)))
-            scroll_area = QScrollArea() # 新建一个滚动区域包住画板
+            scroll_area = QScrollArea() # 新建一个滚动区域包住修复图像
             scroll_area.setWidgetResizable(True)
             scroll_area.setMinimumSize(QSize(900,600))
             scroll_area.setWidget(self.__outputBoard)
