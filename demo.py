@@ -349,6 +349,9 @@ class MainWidget(QWidget):
         """
         # img_name, _ = QFileDialog.getOpenFileName(self, "打开图片", "", "All Files(*);;*.jpg;;*.png")
         img_name, _ = QFileDialog.getOpenFileName(self, "Open Image File","","All Files(*);;*.jpg;;*.png;;*.jpeg")
+        if img_name == "":
+            print("cancel")
+            return
         self.input_image = Image.open(img_name)
         w = self.input_image.size[0]
         h = self.input_image.size[1]
@@ -368,6 +371,9 @@ class MainWidget(QWidget):
         else:
 
             img_name, _ = QFileDialog.getOpenFileName(self, "Open Image File","","*.png")
+            if img_name == "":
+                print("cancel")
+                return
             self.__paintBoard.board = QPixmap(img_name)
             self.__paintBoard.update()
             self.__paintBoard.board_show.setPixmap(self.__paintBoard.board)
