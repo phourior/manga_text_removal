@@ -73,7 +73,7 @@ def prepare_img_and_mask(image, mask, device, pad_out_to_modulo=8, scale_factor=
 class SimpleLamaTest:
     def __init__(
         self,
-        model_path: str = "./model/big-lama.pt",
+        model_path: str = "./model/last.ckpt",
         device: torch.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         ),

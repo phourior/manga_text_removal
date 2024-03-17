@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QPushButton, QSplitter,\
     
 from simple_lama import SimpleLamaTest
 
-from PIL import Image
+from PIL import Image, ImageQt
 
 from transformers import Mask2FormerForUniversalSegmentation
 from transformers import Mask2FormerImageProcessor
@@ -56,17 +56,6 @@ def update_multiple(grid, k):
 # [0 0 0 1 0]
 # [0 0 0 0 0]]
 
-def convert_pil_to_qimage(pil_image):
-    if pil_image.mode == 'RGB':
-        image_format = QImage.Format_RGB888
-    elif pil_image.mode == 'RGBA':
-        image_format = QImage.Format_RGBA8888
-    else:
-        raise ValueError("Unsupported image mode: {}".format(pil_image.mode))
-    
-    image_data = pil_image.tobytes('raw', pil_image.mode)
-    qimage = QImage(image_data, pil_image.width, pil_image.height, image_format)
-    return qimage
 
 def main():
     app = QApplication(sys.argv)
@@ -433,7 +422,7 @@ class MainWidget(QWidget):
             pil_image = Image.fromarray(ground_truth_color_seg.astype('uint8'))
             pil_image.putalpha(128) # 50% 透明度
             # 将 PIL.Image 转换为 QImage
-            qimage = convert_pil_to_qimage(pil_image)
+            qimage = ImageQt.toqimage(pil_image)
             self.__paintBoard.board = QPixmap.fromImage(qimage)
             self.__paintBoard.board_show.setPixmap(self.__paintBoard.board)
 
@@ -453,7 +442,7 @@ class MainWidget(QWidget):
             self.output_image = self.inpainter(self.input_image, mask)
             self.output_image = self.output_image.crop((0, 0, mask.size[0], mask.size[1]))
             self.__outputBoard  = QLabel(self)
-            self.__outputBoard.setPixmap(QPixmap.fromImage(convert_pil_to_qimage(self.output_image)))
+            self.__outputBoard.setPixmap(ImageQt.toqpixmap(self.output_image.convert("RGBA")))
             scroll_area = QScrollArea() # 新建一个滚动区域包住修复图像
             scroll_area.setWidgetResizable(True)
             scroll_area.setMinimumSize(QSize(900,600))
@@ -464,7 +453,7 @@ class MainWidget(QWidget):
             
     def save_inpainting_image(self):
         if self.output_image == None:
-            warning = QMessageBox.warning(self, "Warning", "Please call lama first", QMessageBox.Yes)
+            warning = QMessageBox.warning(self, "Warning", "Please inpaint image first", QMessageBox.Yes)
             print(warning)
         else:
             savePath = QFileDialog.getSaveFileName(self, 'Save Your Paint', '.\\', '*.jpg')
