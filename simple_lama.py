@@ -73,7 +73,7 @@ def prepare_img_and_mask(image, mask, device, pad_out_to_modulo=8, scale_factor=
 class SimpleLamaTest:
     def __init__(
         self,
-        model_path: str = "./model/last.ckpt",
+        model_path: str = "./model/25.pt",
         device: torch.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         ),
@@ -88,6 +88,8 @@ class SimpleLamaTest:
         self.device = device
 
     def __call__(self, image: Image.Image | np.ndarray, mask: Image.Image | np.ndarray):
+        size0 = mask.size[0]
+        size1 = mask.size[1]
         image, mask = prepare_img_and_mask(image, mask, self.device)
 
         with torch.inference_mode():
@@ -97,4 +99,4 @@ class SimpleLamaTest:
             cur_res = np.clip(cur_res * 255, 0, 255).astype(np.uint8)
 
             cur_res = Image.fromarray(cur_res)
-            return cur_res
+            return cur_res.crop((0, 0, size0, size1))

@@ -341,6 +341,7 @@ class MainWidget(QWidget):
         if img_name == "":
             print("cancel")
             return
+        print(img_name)
         self.input_image = Image.open(img_name)
         w = self.input_image.size[0]
         h = self.input_image.size[1]
@@ -440,7 +441,7 @@ class MainWidget(QWidget):
             mask_array = mask_rgba_array[:,:,0].reshape(mask_rgba_array.shape[0], mask_rgba_array.shape[1])
             mask = Image.fromarray(mask_array.astype('uint8'))
             self.output_image = self.inpainter(self.input_image, mask)
-            self.output_image = self.output_image.crop((0, 0, mask.size[0], mask.size[1]))
+            #self.output_image = self.output_image.crop((0, 0, mask.size[0], mask.size[1]))
             self.__outputBoard  = QLabel(self)
             self.__outputBoard.setPixmap(ImageQt.toqpixmap(self.output_image.convert("RGBA")))
             scroll_area = QScrollArea() # 新建一个滚动区域包住修复图像
