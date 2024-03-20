@@ -200,7 +200,7 @@ class MainWidget(QWidget):
         self.__outputBoard = PaintBoard('', 0, 0, self)
         # 获取颜色列表(字符串类型)
         self.__colorList = QColor.colorNames()
-        self.inpainter = SimpleLamaTest(model_path="./model/big-lama.pt")
+        self.inpainter = SimpleLamaTest(model_path="./model/25.pt")
         self.segmentation_processor = Mask2FormerImageProcessor(ignore_index=255, reduce_labels=False, do_resize=False, do_rescale=False, do_normalize=False)
         self.segmentator = Mask2FormerForUniversalSegmentation.from_pretrained("./model/mask2former/")
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -336,7 +336,6 @@ class MainWidget(QWidget):
         select image file and open it
         :return:
         """
-        # img_name, _ = QFileDialog.getOpenFileName(self, "打开图片", "", "All Files(*);;*.jpg;;*.png")
         img_name, _ = QFileDialog.getOpenFileName(self, "Open Image File","","All Files(*);;*.jpg;;*.png;;*.jpeg")
         if img_name == "":
             print("cancel")
@@ -360,7 +359,7 @@ class MainWidget(QWidget):
             print(warning)
         else:
 
-            img_name, _ = QFileDialog.getOpenFileName(self, "Open Image File","","*.png")
+            img_name, _ = QFileDialog.getOpenFileName(self, "Choose mask","","*.png")
             if img_name == "":
                 print("cancel")
                 return
@@ -378,7 +377,7 @@ class MainWidget(QWidget):
             warning = QMessageBox.warning(self, "Warning", "Please import image first", QMessageBox.Yes)
             print(warning)
             return
-        savePath = QFileDialog.getSaveFileName(self, 'Save Your Paint', '.\\', '*.png')
+        savePath = QFileDialog.getSaveFileName(self, 'Save mask', '.\\', '*.png')
         print(savePath)
         if savePath[0] == "":
             print("Save cancel")
@@ -408,24 +407,29 @@ class MainWidget(QWidget):
             warning = QMessageBox.warning(self, "Warning", "Please import image first", QMessageBox.Yes)
             print(warning)
         else:
-            image_array = np.array(self.input_image)
-            batch = self.segmentation_processor(image_array, return_tensors="pt",)
-            with torch.no_grad():
-                outputs = self.segmentator(batch["pixel_values"].float().to(self.device))
-            target_sizes = [(image_array.shape[0], image_array.shape[1])]
-            predicted_segmentation_maps = self.segmentation_processor.post_process_semantic_segmentation(outputs, target_sizes=target_sizes)
-            segmentation_map = predicted_segmentation_maps[0].cpu().numpy()
-            segmentation_map = update_multiple(segmentation_map, 3)
-            color_segmentation_map = np.zeros((segmentation_map.shape[0], segmentation_map.shape[1], 3), dtype=np.uint8) # height, width, 3
-            color_segmentation_map[segmentation_map == 1, :] = [0, 0, 255]
-            # Convert to BGR
-            ground_truth_color_seg = color_segmentation_map[..., ::-1]
-            pil_image = Image.fromarray(ground_truth_color_seg.astype('uint8'))
-            pil_image.putalpha(128) # 50% 透明度
-            # 将 PIL.Image 转换为 QImage
-            qimage = ImageQt.toqimage(pil_image)
-            self.__paintBoard.board = QPixmap.fromImage(qimage)
-            self.__paintBoard.board_show.setPixmap(self.__paintBoard.board)
+            choice = QMessageBox.warning(self, "Warning", "将会覆盖掉现有mask", QMessageBox.Yes | QMessageBox.No)
+            if choice == QMessageBox.Yes:
+                image_array = np.array(self.input_image)
+                batch = self.segmentation_processor(image_array, return_tensors="pt",)
+                with torch.no_grad():
+                    outputs = self.segmentator(batch["pixel_values"].float().to(self.device))
+                target_sizes = [(image_array.shape[0], image_array.shape[1])]
+                predicted_segmentation_maps = self.segmentation_processor.post_process_semantic_segmentation(outputs, target_sizes=target_sizes)
+                segmentation_map = predicted_segmentation_maps[0].cpu().numpy()
+                segmentation_map = update_multiple(segmentation_map, 3)
+                color_segmentation_map = np.zeros((segmentation_map.shape[0], segmentation_map.shape[1], 3), dtype=np.uint8) # height, width, 3
+                color_segmentation_map[segmentation_map == 1, :] = [0, 0, 255]
+                # Convert to BGR
+                ground_truth_color_seg = color_segmentation_map[..., ::-1]
+                pil_image = Image.fromarray(ground_truth_color_seg.astype('uint8'))
+                pil_image.putalpha(128) # 50% 透明度
+                # 将 PIL.Image 转换为 QImage
+                qimage = ImageQt.toqimage(pil_image)
+                self.__paintBoard.board = QPixmap.fromImage(qimage)
+                self.__paintBoard.board_show.setPixmap(self.__paintBoard.board)
+            elif choice == QMessageBox.No:
+                return
+            
 
             
     def call_lama(self):
@@ -457,7 +461,7 @@ class MainWidget(QWidget):
             warning = QMessageBox.warning(self, "Warning", "Please inpaint image first", QMessageBox.Yes)
             print(warning)
         else:
-            savePath = QFileDialog.getSaveFileName(self, 'Save Your Paint', '.\\', '*.jpg')
+            savePath = QFileDialog.getSaveFileName(self, 'Save inpainted image', '.\\', '*.jpg')
             print(savePath)
             if savePath[0] == "":
                 print("Save cancel")
